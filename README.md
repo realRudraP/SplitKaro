@@ -35,6 +35,7 @@ SplitKaro is a browser-based expense splitting application designed to simplify 
   - User authentication system
 - **v2.0**
   - Advanced debt simplification algorithm (minimum total transactions)
+    
 
 ## 🚀 Getting Started
 
