@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trip Details</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.1/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/idb@8/build/umd.js"></script>
+    <script src="app.js"></script>
+    <script src="details.js"></script>
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center min-h-screen" onload="populateTransactions()">
+    <!-- Trip Details Container -->
+    <div class="bg-white shadow-lg rounded-lg p-8 ml-2 mr-2 max-w-xl w-full">
+      <!-- Trip Header -->
+      <div class="items-center justify-between">
+        <div class="flex items-center">
+          <h2 id="tripName" class="text-2xl font-semibold text-gray-800 mb-2">
+            Event: <span id="eventNameHolder"></span>
+          </h2>
+          <button
+            onclick="editTripName()"
+            class="ml-2 text-gray-500 hover:text-gray-700"
+          >
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+        </div>
+        <p class="text-sm text-gray-600">
+          Date: <span id="eventDateHolder"></span>
+        </p>
+      </div>
+
+      
+      <h3 class="text-lg font-medium text-gray-700 mt-4 mb-3">Participants</h3>
+      <div class="flex flex-wrap gap-2 mb-6" id="participantsHolder"></div>
+
+      <h3 class="text-lg font-medium text-gray-700 mb-3">Expense Breakdown</h3>
+      <div class="space-y-4 mb-6">
+        <div id="allTransactionsContainer">
+      </div>
+      <button
+        onclick="showAddTransactionModal()"
+        class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-300"
+      >
+        + Add Expense
+      </button>
+
+      <!-- Total Expenses -->
+      <div class="text-center mt-8">
+        <p class="text-lg font-semibold text-gray-800">Total Expenses</p>
+        <p class="text-2xl font-bold text-blue-600 mt-1">$150</p>
+      </div>
+    </div>
+
+    <!-- Participant Modal -->
+    <div
+      id="participantModal"
+      class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden"
+    >
+      <div class="bg-white rounded-lg p-6 w-80 shadow-lg">
+        <h2 class="text-xl font-semibold mb-4">Add Participant</h2>
+        <!-- Participant Form -->
+        <form id="participantForm" onsubmit="addParticipant()">
+          <label class="block text-sm font-medium text-gray-700"
+            >Participant Name</label
+          >
+          <input
+            type="text"
+            id="newParticipantName"
+            class="border border-gray-300 rounded p-2 mt-1 w-full"
+            placeholder="Enter name"
+            required
+          />
+          <div class="flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onclick="closeAddParticipantModal()"
+              class="px-4 py-2 bg-gray-500 text-white rounded"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-blue-500 text-white rounded"
+            >
+              Add
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add Transaction Modal -->
+    <div
+      id="addTransactionModalBackground"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center hidden justify-center z-50"
+    >
+      <div class="bg-white p-6 rounded-lg shadow-lg w-80">
+        <h2 class="text-xl font-semibold mb-4">Add Transaction</h2>
+        <!-- Transaction Form -->
+        <form id="transactionForm" onsubmit="addTransaction();">
+          <div class="mb-5">
+            <label
+              for="transactionName"
+              class="block text-sm font-medium text-gray-700"
+              >Transaction Name</label
+            >
+            <input
+              type="text"
+              id="transactionNameInput"
+              required
+              placeholder="Name"
+              class="w-full border-gray-300 rounded-md p-2 mt-1"
+            />
+          </div>
+          <div class="mb-3">
+            <label for="payer" class="block text-sm font-medium text-gray-700"
+              >Payer</label
+            >
+            <select
+              name="payer"
+              id="selectPayer"
+              class="w-full border-gray-300 rounded-md p-2 mt-1"
+            ></select>
+          </div>
+          <div class="mb-3">
+            <label
+              for="participants"
+              class="block text-sm font-medium text-gray-700"
+              >Participants</label
+            >
+            <select
+              name="payees"
+              id="selectPayees"
+              multiple
+              class="w-full border-gray-300 rounded-md p-2 mt-1"
+            ></select>
+          </div>
+          <div class="mb-3">
+            <label for="amount" class="block text-sm font-medium text-gray-700"
+              >Amount</label
+            >
+            <input
+              type="text"
+              pattern="^\d*\.?\d{0,2}$"
+              id="totalAmount"
+              name="amount"
+              required
+              class="w-full border-gray-300 rounded-md p-2 mt-1"
+              placeholder="Enter amount"
+              oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
+            />
+          </div>
+          <div class="mb-2 hidden" id="splitToggle">
+            <button
+              type="button"
+              onclick="splitEqually()"
+              class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+            >
+              Split Equally
+            </button>
+          </div>
+          <div
+            class="mb-2 max-h-40 overflow-y-auto pr-2"
+            id="customSplit"
+          ></div>
+          <div class="mb-2 hidden" id="splitRemainingEquallyCont">
+            <input type="checkbox" id="splitRemainingEqually" /><span
+              class="ml-1"
+              >Split remaining equally</span
+            >
+          </div>
+          <div class="flex justify-end mt-4">
+            <button
+              type="button"
+              onclick="closeModal()"
+              class="px-4 py-2 text-gray-600 rounded hover:bg-gray-200 mr-2"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              onclick="submitTransaction()"
+            >
+              Add
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+  <script>
+
+    function validateTotalAmount() {
+      const totalAmountElement = document.getElementById("totalAmount");
+      const totalAmount = parseFloat(totalAmountElement.value) || 0;
+      let currentSum = 0;
+
+      const customSplit = document.getElementById("customSplit");
+      const amountInputs = customSplit.querySelectorAll(
+        'input[data-amount="true"]'
+      );
+
+      amountInputs.forEach((input) => {
+        const inputValue = parseFloat(input.value);
+        if (!isNaN(inputValue)) {
+          currentSum += inputValue;
+        }
+      });
+
+      if (currentSum > totalAmount) {
+        alert("The sum of the custom split amounts exceeds the total amount.");
+        totalAmountElement.value = "";
+      }
+    }
+
+    document
+      .getElementById("selectPayees")
+      .addEventListener("change", function () {
+        const selectedPayees = [];
+        const selectPayees = document.getElementById("selectPayees");
+        const customSplit = document.getElementById("customSplit");
+        const splitToggle = document.getElementById("splitToggle");
+        const splitRemainingEquallyToggle=document.getElementById("splitRemainingEquallyCont")
+        customSplit.innerHTML = "";
+
+        for (let i = 0; i < selectPayees.options.length; i++) {
+          if (selectPayees.options[i].selected) {
+            selectedPayees.push({
+              name: selectPayees.options[i].text,
+              id: selectPayees.options[i].value,
+            });
+          }
+        }
+
+        if (selectedPayees.length > 1) {
+          splitToggle.classList.remove("hidden");
+          splitRemainingEquallyToggle.classList.remove("hidden");
+        } else {
+          splitToggle.classList.add("hidden");
+          splitRemainingEquallyToggle.classList.add("hidden");
+        }
+
+        selectedPayees.forEach((payee) => {
+          const payeeElement = document.createElement("div");
+          payeeElement.className = "flex customSplitPayee";
+
+          const payeeNameElement = document.createElement("input");
+          payeeNameElement.value = payee.name;
+          payeeNameElement.setAttribute("readonly", true);
+          payeeNameElement.className =
+            "w-full border-gray-300 rounded-md p-2 mt-1 mr-2";
+
+          const payeeIdElement = document.createElement("input");
+          payeeIdElement.setAttribute("type", "hidden");
+          payeeIdElement.value = payee.id;
+
+          const payableAmountElement = document.createElement("input");
+          payableAmountElement.setAttribute("type", "text");
+          payableAmountElement.setAttribute("pattern", "^\\d*\\.?\\d{0,2}$");
+          payableAmountElement.setAttribute("data-amount", "true");
+          payableAmountElement.setAttribute("required", "true");
+          payableAmountElement.addEventListener("input", function (e) {
+            this.value = this.value
+              .replace(/[^0-9.]/g, "")
+              .replace(/(\..*)\./g, "$1");
+          });
+          payableAmountElement.className =
+            "w-full border-gray-300 rounded-md p-2 mt-1";
+
+          payeeElement.appendChild(payeeNameElement);
+          payeeElement.appendChild(payeeIdElement);
+          payeeElement.appendChild(payableAmountElement);
+          customSplit.appendChild(payeeElement);
+        });
+      });
+
+    function splitEqually() {
+      const selectPayees = document.getElementById("selectPayees");
+      const totalAmount = parseFloat(
+        document.getElementById("totalAmount").value
+      );
+      const customSplit = document.getElementById("customSplit");
+
+      const selectedPayees = [];
+      for (let i = 0; i < selectPayees.options.length; i++) {
+        if (selectPayees.options[i].selected) {
+          selectedPayees.push({
+            name: selectPayees.options[i].text,
+            id: selectPayees.options[i].value,
+          });
+        }
+      }
+
+      if (selectedPayees.length > 0 && !isNaN(totalAmount)) {
+        const splitAmount = (totalAmount / selectedPayees.length).toFixed(2);
+        customSplit.innerHTML = "";
+
+        selectedPayees.forEach((payee) => {
+          const payeeElement = document.createElement("div");
+          payeeElement.classList.add("flex");
+
+          const payeeNameElement = document.createElement("input");
+          payeeNameElement.value = payee.name;
+          payeeNameElement.setAttribute("readonly", true);
+          payeeNameElement.className =
+            "w-full border-gray-300 rounded-md p-2 mt-1 mr-2";
+
+          const payeeIdElement = document.createElement("input");
+          payeeIdElement.type = "hidden";
+          payeeIdElement.value = payee.id;
+
+          const payableAmountElement = document.createElement("input");
+          payableAmountElement.setAttribute("type", "text");
+          payableAmountElement.setAttribute("pattern", "^\\d*\\.?\\d{0,2}$");
+          payableAmountElement.setAttribute("data-amount", "true");
+          payableAmountElement.setAttribute("required", "true");
+          payableAmountElement.className =
+            "w-full border-gray-300 rounded-md p-2 mt-1";
+          payableAmountElement.value = splitAmount;
+          payableAmountElement.addEventListener("input", function (e) {
+            this.value = this.value
+              .replace(/[^0-9.]/g, "")
+              .replace(/(\..*)\./g, "$1");
+          });
+
+          payeeElement.appendChild(payeeNameElement);
+          payeeElement.appendChild(payeeIdElement);
+          payeeElement.appendChild(payableAmountElement);
+          customSplit.appendChild(payeeElement);
+        });
+      } else {
+        alert("Please select payees and enter a valid total amount.");
+      }
+    }
+
+    function closeModal() {
+      document
+        .getElementById("addTransactionModalBackground")
+        .classList.add("hidden");
+    }
+
+    function closeAddParticipantModal() {
+      document.getElementById("participantModal").classList.add("hidden");
+    }
+  </script>
+</html>
