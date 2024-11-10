@@ -239,7 +239,7 @@ function createTransactionDiv(title, payer, debts, payerID, commonCharges, total
     debts.forEach(({ name, amount, id }) => {
         if (id !== payerID) {
             const debtEl = document.createElement("span");
-            debtEl.innerHTML = `${name} owes <strong>$${amount}</strong>`;
+            debtEl.innerHTML = `${name} owes <strong>₹${amount}</strong>`;
             debtsContainer.appendChild(debtEl);
         }
     });
