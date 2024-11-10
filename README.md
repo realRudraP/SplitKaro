@@ -1,7 +1,7 @@
 # SplitKaro
 
 ![GitHub Release](https://img.shields.io/github/v/release/realRudraP/SplitKaro)
-![GitHub License](https://img.shields.io/github/license/realRudraP/SplitKaro)
+![License](https://img.shields.io/badge/license-MIT-yellow?style=flat)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](http://makeapullrequest.com)
 [![Deployment Status](https://img.shields.io/badge/deployed-cloudflare-F38020)](https://splitkaro.pages.dev)
 
