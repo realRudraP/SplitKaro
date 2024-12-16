@@ -276,7 +276,10 @@ async function calculateDebts(transactions, participants) {
     const balances = {}; 
     const participantMap = {}; 
     const debtsMap = {}; 
-
+    console.log(transactions);
+    console.log(participants);
+    
+    
     participants.forEach(participant => {
         balances[participant.id] = 0;
         participantMap[participant.id] = participant.name;
@@ -316,6 +319,7 @@ async function calculateDebts(transactions, participants) {
                     debtsMap[debtKey] = {
                         from: payeeName,
                         to: payerName,
+                        amount:0
                     };
                 }
 

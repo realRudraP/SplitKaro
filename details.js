@@ -81,3 +81,41 @@ const eventID=params.get("eventid");
     }
     window.location.href="/details.html?eventid="+getEventID();
 }
+async function populateDebts() {
+    const params = new URLSearchParams(window.location.search);
+    const eventID = params.get("eventid");
+    let db = await initDB();
+    let tx = db.transaction(["trips", "transactions"], "readwrite");
+    const tripsStore = tx.objectStore("trips");
+    const event = await tripsStore.get(eventID);
+
+    if (event && event.debts) {
+        const debtContainer = document.getElementById("debtsSummaryContainer");
+        debtContainer.innerHTML = ''; // Clear previous entries
+
+        event.debts.forEach(debt => {
+            const debtEl = document.createElement("div");
+            debtEl.className = "bg-gray-50 p-4 rounded-lg border border-gray-200";
+            debtEl.innerHTML = `
+                <p class="text-gray-800">
+                    <strong>${debt.from}</strong> owes <strong>${debt.to}</strong> 
+                    <span class="text-blue-600">₹${debt.amount.toFixed(2)}</span>
+                </p>
+            `;
+            debtContainer.appendChild(debtEl);
+        });
+    }
+}
+
+function toggleTransactions() {
+    const transactionsSection = document.getElementById("transactionsSection");
+    const toggleBtn = document.getElementById("toggleTransactionsBtn");
+    
+    if (transactionsSection.classList.contains("hidden")) {
+        transactionsSection.classList.remove("hidden");
+        toggleBtn.textContent = "Hide Transactions";
+    } else {
+        transactionsSection.classList.add("hidden");
+        toggleBtn.textContent = "Show Transactions";
+    }
+}
