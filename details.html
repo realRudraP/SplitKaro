@@ -16,7 +16,7 @@
     <script src="app.js"></script>
     <script src="details.js"></script>
   </head>
-  <body class="bg-gray-100 flex items-center justify-center min-h-screen" onload="populateTransactions()">
+  <body class="bg-gray-100 flex items-center justify-center min-h-screen" onload="populateTransactions(); populateDebts()">
     <!-- Trip Details Container -->
     <div class="bg-white shadow-lg rounded-lg p-8 ml-2 mr-2 max-w-xl w-full">
       <!-- Trip Header -->
@@ -41,16 +41,29 @@
       <h3 class="text-lg font-medium text-gray-700 mt-4 mb-3">Participants</h3>
       <div class="flex flex-wrap gap-2 mb-6" id="participantsHolder"></div>
 
-      <h3 class="text-lg font-medium text-gray-700 mb-3">Expense Breakdown</h3>
-      <div class="space-y-4 mb-6">
-        <div id="allTransactionsContainer">
+      <h3 class="text-lg font-medium text-gray-700 mt-4 mb-3">Debt Summary</h3>
+      <div id="debtsSummaryContainer" class="space-y-4 mb-6"></div>
+
+      <div class="flex items-center justify-between mt-4 mb-3">
+          <h3 class="text-lg font-medium text-gray-700">Transactions</h3>
+          <button 
+              id="toggleTransactionsBtn" 
+              onclick="toggleTransactions()"
+              class="text-blue-500 hover:text-blue-700 text-sm"
+          >
+              Show Transactions
+          </button>
+      </div>
+      <div id="transactionsSection" class="hidden space-y-4 mb-6">
+          <div id="allTransactionsContainer"></div>
+          
       </div>
       <button
-        onclick="showAddTransactionModal()"
-        class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-300"
-      >
-        + Add Expense
-      </button>
+              onclick="showAddTransactionModal()"
+              class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-300"
+          >
+              + Add Expense
+          </button>
 
     <!-- Participant Modal -->
     <div
@@ -189,160 +202,164 @@
         </form>
       </div>
     </div>
+    <button onclick="updateDebts()"> Update debts</button>
   </body>
   <script>
+    
 
-    function validateTotalAmount() {
-      const totalAmountElement = document.getElementById("totalAmount");
-      const totalAmount = parseFloat(totalAmountElement.value) || 0;
-      let currentSum = 0;
+function validateTotalAmount() {
+  const totalAmountElement = document.getElementById("totalAmount");
+  const totalAmount = parseFloat(totalAmountElement.value) || 0;
+  let currentSum = 0;
 
-      const customSplit = document.getElementById("customSplit");
-      const amountInputs = customSplit.querySelectorAll(
-        'input[data-amount="true"]'
-      );
+  const customSplit = document.getElementById("customSplit");
+  const amountInputs = customSplit.querySelectorAll(
+    'input[data-amount="true"]'
+  );
 
-      amountInputs.forEach((input) => {
-        const inputValue = parseFloat(input.value);
-        if (!isNaN(inputValue)) {
-          currentSum += inputValue;
-        }
+  amountInputs.forEach((input) => {
+    const inputValue = parseFloat(input.value);
+    if (!isNaN(inputValue)) {
+      currentSum += inputValue;
+    }
+  });
+
+  if (currentSum > totalAmount) {
+    alert("The sum of the custom split amounts exceeds the total amount.");
+    totalAmountElement.value = "";
+  }
+}
+
+document
+  .getElementById("selectPayees")
+  .addEventListener("change", function () {
+    const selectedPayees = [];
+    const selectPayees = document.getElementById("selectPayees");
+    const customSplit = document.getElementById("customSplit");
+    const splitToggle = document.getElementById("splitToggle");
+    const splitRemainingEquallyToggle=document.getElementById("splitRemainingEquallyCont")
+    customSplit.innerHTML = "";
+
+    for (let i = 0; i < selectPayees.options.length; i++) {
+      if (selectPayees.options[i].selected) {
+        selectedPayees.push({
+          name: selectPayees.options[i].text,
+          id: selectPayees.options[i].value,
+        });
+      }
+    }
+
+    if (selectedPayees.length > 1) {
+      splitToggle.classList.remove("hidden");
+      splitRemainingEquallyToggle.classList.remove("hidden");
+    } else {
+      splitToggle.classList.add("hidden");
+      splitRemainingEquallyToggle.classList.add("hidden");
+    }
+
+    selectedPayees.forEach((payee) => {
+      const payeeElement = document.createElement("div");
+      payeeElement.className = "flex customSplitPayee";
+
+      const payeeNameElement = document.createElement("input");
+      payeeNameElement.value = payee.name;
+      payeeNameElement.setAttribute("readonly", true);
+      payeeNameElement.className =
+        "w-full border-gray-300 rounded-md p-2 mt-1 mr-2";
+
+      const payeeIdElement = document.createElement("input");
+      payeeIdElement.setAttribute("type", "hidden");
+      payeeIdElement.value = payee.id;
+
+      const payableAmountElement = document.createElement("input");
+      payableAmountElement.setAttribute("type", "text");
+      payableAmountElement.setAttribute("pattern", "^\\d*\\.?\\d{0,2}$");
+      payableAmountElement.setAttribute("data-amount", "true");
+      payableAmountElement.setAttribute("required", "true");
+      payableAmountElement.addEventListener("input", function (e) {
+        this.value = this.value
+          .replace(/[^0-9.]/g, "")
+          .replace(/(\..*)\./g, "$1");
+      });
+      payableAmountElement.className =
+        "w-full border-gray-300 rounded-md p-2 mt-1";
+
+      payeeElement.appendChild(payeeNameElement);
+      payeeElement.appendChild(payeeIdElement);
+      payeeElement.appendChild(payableAmountElement);
+      customSplit.appendChild(payeeElement);
+    });
+  });
+
+function splitEqually() {
+  const selectPayees = document.getElementById("selectPayees");
+  const totalAmount = parseFloat(
+    document.getElementById("totalAmount").value
+  );
+  const customSplit = document.getElementById("customSplit");
+
+  const selectedPayees = [];
+  for (let i = 0; i < selectPayees.options.length; i++) {
+    if (selectPayees.options[i].selected) {
+      selectedPayees.push({
+        name: selectPayees.options[i].text,
+        id: selectPayees.options[i].value,
+      });
+    }
+  }
+
+  if (selectedPayees.length > 0 && !isNaN(totalAmount)) {
+    const splitAmount = (totalAmount / selectedPayees.length).toFixed(2);
+    customSplit.innerHTML = "";
+
+    selectedPayees.forEach((payee) => {
+      const payeeElement = document.createElement("div");
+      payeeElement.classList.add("flex");
+
+      const payeeNameElement = document.createElement("input");
+      payeeNameElement.value = payee.name;
+      payeeNameElement.setAttribute("readonly", true);
+      payeeNameElement.className =
+        "w-full border-gray-300 rounded-md p-2 mt-1 mr-2";
+
+      const payeeIdElement = document.createElement("input");
+      payeeIdElement.type = "hidden";
+      payeeIdElement.value = payee.id;
+
+      const payableAmountElement = document.createElement("input");
+      payableAmountElement.setAttribute("type", "text");
+      payableAmountElement.setAttribute("pattern", "^\\d*\\.?\\d{0,2}$");
+      payableAmountElement.setAttribute("data-amount", "true");
+      payableAmountElement.setAttribute("required", "true");
+      payableAmountElement.className =
+        "w-full border-gray-300 rounded-md p-2 mt-1";
+      payableAmountElement.value = splitAmount;
+      payableAmountElement.addEventListener("input", function (e) {
+        this.value = this.value
+          .replace(/[^0-9.]/g, "")
+          .replace(/(\..*)\./g, "$1");
       });
 
-      if (currentSum > totalAmount) {
-        alert("The sum of the custom split amounts exceeds the total amount.");
-        totalAmountElement.value = "";
-      }
-    }
+      payeeElement.appendChild(payeeNameElement);
+      payeeElement.appendChild(payeeIdElement);
+      payeeElement.appendChild(payableAmountElement);
+      customSplit.appendChild(payeeElement);
+    });
+  } else {
+    alert("Please select payees and enter a valid total amount.");
+  }
+}
 
-    document
-      .getElementById("selectPayees")
-      .addEventListener("change", function () {
-        const selectedPayees = [];
-        const selectPayees = document.getElementById("selectPayees");
-        const customSplit = document.getElementById("customSplit");
-        const splitToggle = document.getElementById("splitToggle");
-        const splitRemainingEquallyToggle=document.getElementById("splitRemainingEquallyCont")
-        customSplit.innerHTML = "";
+function closeModal() {
+  document
+    .getElementById("addTransactionModalBackground")
+    .classList.add("hidden");
+}
 
-        for (let i = 0; i < selectPayees.options.length; i++) {
-          if (selectPayees.options[i].selected) {
-            selectedPayees.push({
-              name: selectPayees.options[i].text,
-              id: selectPayees.options[i].value,
-            });
-          }
-        }
+function closeAddParticipantModal() {
+  document.getElementById("participantModal").classList.add("hidden");
+}
 
-        if (selectedPayees.length > 1) {
-          splitToggle.classList.remove("hidden");
-          splitRemainingEquallyToggle.classList.remove("hidden");
-        } else {
-          splitToggle.classList.add("hidden");
-          splitRemainingEquallyToggle.classList.add("hidden");
-        }
-
-        selectedPayees.forEach((payee) => {
-          const payeeElement = document.createElement("div");
-          payeeElement.className = "flex customSplitPayee";
-
-          const payeeNameElement = document.createElement("input");
-          payeeNameElement.value = payee.name;
-          payeeNameElement.setAttribute("readonly", true);
-          payeeNameElement.className =
-            "w-full border-gray-300 rounded-md p-2 mt-1 mr-2";
-
-          const payeeIdElement = document.createElement("input");
-          payeeIdElement.setAttribute("type", "hidden");
-          payeeIdElement.value = payee.id;
-
-          const payableAmountElement = document.createElement("input");
-          payableAmountElement.setAttribute("type", "text");
-          payableAmountElement.setAttribute("pattern", "^\\d*\\.?\\d{0,2}$");
-          payableAmountElement.setAttribute("data-amount", "true");
-          payableAmountElement.setAttribute("required", "true");
-          payableAmountElement.addEventListener("input", function (e) {
-            this.value = this.value
-              .replace(/[^0-9.]/g, "")
-              .replace(/(\..*)\./g, "$1");
-          });
-          payableAmountElement.className =
-            "w-full border-gray-300 rounded-md p-2 mt-1";
-
-          payeeElement.appendChild(payeeNameElement);
-          payeeElement.appendChild(payeeIdElement);
-          payeeElement.appendChild(payableAmountElement);
-          customSplit.appendChild(payeeElement);
-        });
-      });
-
-    function splitEqually() {
-      const selectPayees = document.getElementById("selectPayees");
-      const totalAmount = parseFloat(
-        document.getElementById("totalAmount").value
-      );
-      const customSplit = document.getElementById("customSplit");
-
-      const selectedPayees = [];
-      for (let i = 0; i < selectPayees.options.length; i++) {
-        if (selectPayees.options[i].selected) {
-          selectedPayees.push({
-            name: selectPayees.options[i].text,
-            id: selectPayees.options[i].value,
-          });
-        }
-      }
-
-      if (selectedPayees.length > 0 && !isNaN(totalAmount)) {
-        const splitAmount = (totalAmount / selectedPayees.length).toFixed(2);
-        customSplit.innerHTML = "";
-
-        selectedPayees.forEach((payee) => {
-          const payeeElement = document.createElement("div");
-          payeeElement.classList.add("flex");
-
-          const payeeNameElement = document.createElement("input");
-          payeeNameElement.value = payee.name;
-          payeeNameElement.setAttribute("readonly", true);
-          payeeNameElement.className =
-            "w-full border-gray-300 rounded-md p-2 mt-1 mr-2";
-
-          const payeeIdElement = document.createElement("input");
-          payeeIdElement.type = "hidden";
-          payeeIdElement.value = payee.id;
-
-          const payableAmountElement = document.createElement("input");
-          payableAmountElement.setAttribute("type", "text");
-          payableAmountElement.setAttribute("pattern", "^\\d*\\.?\\d{0,2}$");
-          payableAmountElement.setAttribute("data-amount", "true");
-          payableAmountElement.setAttribute("required", "true");
-          payableAmountElement.className =
-            "w-full border-gray-300 rounded-md p-2 mt-1";
-          payableAmountElement.value = splitAmount;
-          payableAmountElement.addEventListener("input", function (e) {
-            this.value = this.value
-              .replace(/[^0-9.]/g, "")
-              .replace(/(\..*)\./g, "$1");
-          });
-
-          payeeElement.appendChild(payeeNameElement);
-          payeeElement.appendChild(payeeIdElement);
-          payeeElement.appendChild(payableAmountElement);
-          customSplit.appendChild(payeeElement);
-        });
-      } else {
-        alert("Please select payees and enter a valid total amount.");
-      }
-    }
-
-    function closeModal() {
-      document
-        .getElementById("addTransactionModalBackground")
-        .classList.add("hidden");
-    }
-
-    function closeAddParticipantModal() {
-      document.getElementById("participantModal").classList.add("hidden");
-    }
-  </script>
+</script>
+  
 </html>
