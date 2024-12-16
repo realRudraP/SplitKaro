@@ -203,48 +203,52 @@ async function submitTransaction() {
     await tx.done;
     localStorage.setItem("lastTransaction",String(Date.now()));
     closeModal();
+    updateDebts();
     window.location.href="/details.html?eventid="+eventID;
 }
 
-function createTransactionDiv(title, payer, debts, payerID, commonCharges, totalAmount) {
+function createTransactionDiv(transaction, participants) {
     const container = document.createElement("div");
     container.className = "bg-gray-50 p-4 rounded-lg border border-gray-200";
 
     // Title (e.g., "Taxi")
     const titleEl = document.createElement("p");
     titleEl.className = "text-gray-800 font-medium";
-    titleEl.textContent = title;
+    titleEl.textContent = transaction.name;
     container.appendChild(titleEl);
 
     // Payer (e.g., "Paid by: Bob")
+    const payerName = participants.find(p => p.id === transaction.payerID)?.name || 'Unknown';
     const payerEl = document.createElement("p");
     payerEl.className = "text-sm text-gray-600";
-    payerEl.textContent = `Paid by: ${payer}`;
+    payerEl.textContent = `Paid by: ${payerName}`;
     container.appendChild(payerEl);
 
     // Total amount paid by the payer
     const totalAmountEl = document.createElement("p");
     totalAmountEl.className = "text-sm text-gray-600";
-    totalAmountEl.textContent = `Total Amount Paid: ₹${totalAmount}`;
+    totalAmountEl.textContent = `Total Amount Paid: ₹${transaction.amount.toFixed(2)}`;
     container.appendChild(totalAmountEl);
 
     // Common charges (e.g., "Common Charges: 10")
-    if (commonCharges > 0) {
+    if (transaction.commonCharges > 0) {
         const commonChargesEl = document.createElement("p");
         commonChargesEl.className = "text-gray-600 text-sm";
-        commonChargesEl.textContent = `Common Charges: ₹${commonCharges}`;
+        commonChargesEl.textContent = `Common Charges: ₹${transaction.commonCharges.toFixed(2)}`;
         container.appendChild(commonChargesEl);
     }
 
     // Container for debts
     const debtsContainer = document.createElement("div");
-    debtsContainer.className = "flex justify-between items-center text-gray-700 text-sm mt-2";
+    debtsContainer.className = "mt-2";
 
     // Loop through each debt and add it to the debts container
-    debts.forEach(({ name, amount, id }) => {
-        if (id !== payerID) {
-            const debtEl = document.createElement("span");
-            debtEl.innerHTML = `${name} owes <strong>₹${amount}</strong>`;
+    transaction.payees.forEach(payee => {
+        if (payee.id !== transaction.payerID) {
+            const payeeName = participants.find(p => p.id === payee.id)?.name || 'Unknown';
+            const debtEl = document.createElement("p");
+            debtEl.className = "text-gray-600 text-sm";
+            debtEl.innerHTML = `${payeeName} owes <strong>₹${payee.amount.toFixed(2)}</strong>`;
             debtsContainer.appendChild(debtEl);
         }
     });
@@ -252,33 +256,68 @@ function createTransactionDiv(title, payer, debts, payerID, commonCharges, total
     // Append debts container to main container
     container.appendChild(debtsContainer);
 
+    // Add delete button
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "mt-2 bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded";
+    deleteButton.textContent = "Delete";
+    deleteButton.addEventListener("click", () => {
+        deleteTransaction(transaction.transactionID);
+    });
+    container.appendChild(deleteButton);
+
     return container;
 }
 
+async function populateTransactions() {
+    const db=await initDB();
+    let tx = db.transaction(["transactions","trips"], "readonly");
+    const transactionStore = tx.objectStore("transactions");
+    const index = transactionStore.index("eventID");
+    const transactions = await index.getAll(eventID);
+    const tripStore=tx.objectStore("trips");
+    const trip=await tripStore.get(eventID)
+    console.log(trip);
+    
 
-async function populateTransactions(){
-    const params = new URLSearchParams(window.location.search);
-    const eventID = params.get("eventid");
-    let db=await initDB();
-    let tx=db.transaction(["trips","transactions"],"readwrite");
-    const transactionStore=tx.objectStore("transactions");
-    const index=transactionStore.index("eventID");
-    const results=await index.getAll(eventID);
-    const bigContainer=document.getElementById("allTransactionsContainer");
-    results.forEach(result => {
-        const transactionContainer=createTransactionDiv(result["transacationName"],result["payerName"],result["payees"],result["payerID"],result["commonCharges"],result["amount"]);
-        bigContainer.appendChild(transactionContainer);
+    if (!transactions) {
+        console.error("Event not found");
+        return;
+    }
+
+    const participants = trip.participants || [];
+    
+    console.log(transactions);
+    
+
+    // Populate payer and payee dropdowns in the modal
+    const selectPayer = document.getElementById("selectPayer");
+    const selectPayees = document.getElementById("selectPayees");
+
+    selectPayer.innerHTML = "";
+    selectPayees.innerHTML = "";
+
+    participants.forEach(participant => {
+        const option = document.createElement("option");
+        option.value = participant.id;
+        option.text = participant.name;
+        selectPayer.add(option.cloneNode(true));
+        selectPayees.add(option);
     });
-    await tx.done;
+
+    // Display transactions in the allTransactionsContainer
+    const allTransactionsContainer = document.getElementById("allTransactionsContainer");
+    allTransactionsContainer.innerHTML = ""; // Clear existing transactions
+
+    transactions.forEach(transaction => {
+        const transactionElement = createTransactionDiv(transaction, participants);
+        allTransactionsContainer.appendChild(transactionElement);
+    });
 }
 
 async function calculateDebts(transactions, participants) {
     const balances = {}; 
     const participantMap = {}; 
     const debtsMap = {}; 
-    console.log(transactions);
-    console.log(participants);
-    
     
     participants.forEach(participant => {
         balances[participant.id] = 0;
@@ -331,8 +370,6 @@ async function calculateDebts(transactions, participants) {
 
     // Convert debtsMap to an array
     const debts = Object.values(debtsMap);
-
-    console.log(debts);
     localStorage.setItem("lastDebtCache", String(Date.now()));
     return debts;
 }
@@ -355,20 +392,28 @@ async function updateDebts() {
 
     if (lastTransaction && lastDebtCache && lastTransaction <= lastDebtCache && event.debts) {
         debts = event.debts;
-        console.log("Using cached debts.");
-        console.log("Debts:", debts);
         alert("Using last debt cache.");
     } else {
         debts = await calculateDebts(transactions, participants);
         event.debts = debts;
         event.lastDebtCache = String(Date.now());
         localStorage.setItem("lastDebtCache", event.lastDebtCache);
-        localStorage.setItem("lastTransaction", String(transactions[transactions.length-1].timestamp));
         tripsStore.put(event);
         await tx.done;
 
-        console.log("Debts recalculated.");
-        console.log("Debts:", debts);
         alert("Debts recalculated.");
     }
+}
+
+async function deleteTransaction(transactionId) {
+    if (!confirm("Are you sure you want to delete this transaction?")) {
+        return; 
+    }
+    const db=await initDB();
+    let tx = db.transaction(["transactions"], "readwrite");
+    const transactionStore = tx.objectStore("transactions");
+    transactionStore.delete(transactionId);
+    await tx.done;
+    localStorage.setItem("lastTransaction",String(Date.now()))
+    calculateDebts();
 }
