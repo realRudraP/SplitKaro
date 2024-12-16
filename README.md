@@ -9,66 +9,55 @@
 
 ## 🌟 Overview
 
-SplitKaro is a browser-based expense splitting application designed to simplify shared expense management among groups. Whether you're traveling with friends, sharing an apartment, or splitting dinner bills, SplitKaro helps you keep track of who owes what and simplifies the settlement process.
+SplitKaro is a browser-based expense splitting application designed to simplify shared expense management among groups. Whether you're traveling with friends, sharing an apartment, or splitting dinner bills, SplitKaro helps you keep track of who owes what.
+
+Try it out at [splitkaro.pages.dev](https://splitkaro.pages.dev)
 
 ## ✨ Features
 
-### Current Features (v0.4)
-- Create, view, and edit trips
-- Add expenses with flexible splitting options:
+### Current Features (v0.5)
+- **Trip Management**
+  - Create and view trips
+  - Add and manage participants
+  - Track total expenses
+- **Expense Handling**
+  - Add expenses with flexible splitting options
   - Equal split among participants
   - Custom amount split
-  - Automatic distribution of additional charges (taxes, tips, etc.)
-- View detailed transaction history for each trip
-- Offline-first approach with local data storage
-- Clean, intuitive user interface
+  - Additional charges distribution (taxes, tips)
+- **Debt Tracking**
+  - Automatic debt calculations between participants
+  - Performance-optimized caching system
+  - Individual transaction management
+  - Transaction deletion capability
+- **Data Management**
+  - Offline-first with local storage
+  - Detailed transaction history
+  - Clean, simple interface
 
-### Upcoming Features
-- **v0.5**
-  - Detailed payment instructions (who pays whom)
-  - Transaction editing and deletion
+### Development Roadmap
 - **v1.0**
-  - Smart debt simplification (one transaction per user pair)
+  - Debt simplification (one transaction per user pair)
+  - Complete transaction management (edit & delete)
+  - Trip deletion functionality
   - Progressive Web App (PWA) support
+  - Enhanced payment instructions
 - **v1.5**
-  - Optional cloud storage integration
-  - User authentication system
+  - Cloud storage integration
+  - User authentication
 - **v2.0**
-  - Advanced debt simplification algorithm (minimum total transactions)
-    
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Any modern web browser
-- Git (for cloning the repository)
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/realRudraP/SplitKaro.git
-```
-
-2. Navigate to the project directory:
-```bash
-cd SplitKaro
-```
-
-3. Open `index.html` in your web browser to run the application locally
-
-### Live Demo
-Visit [https://splitkaro.pages.dev](https://splitkaro.pages.dev) to try out SplitKaro.
+  - Improved debt optimization
+  - Enhanced transaction pathfinding
 
 ## 💻 Technical Details
 
 ### Built With
 - HTML5
 - Vanilla JavaScript
-- [Tailwind CSS](https://tailwindcss.com/) - For styling
-- [IDB Wrapper](https://github.com/jakearchibald/idb) - For IndexedDB interactions
+- [Tailwind CSS](https://tailwindcss.com/) for styling
+- [IDB Wrapper](https://github.com/jakearchibald/idb) for IndexedDB interactions
 
-### Data Models
+### Data Architecture
 
 #### Transaction Structure
 ```javascript
@@ -96,26 +85,29 @@ Visit [https://splitkaro.pages.dev](https://splitkaro.pages.dev) to try out Spli
 }
 ```
 
+### Debt Management System
+SplitKaro implements an efficient debt tracking system that maintains individual debt records between participants. The system uses caching to optimize performance, updating debt calculations only when new transactions are detected. This approach provides quick access to debt information while minimizing computational overhead.
+
 ## 🤝 Contributing
 
-Contributions are welcome! If you'd like to contribute:
+Contributions are welcome! Whether you're interested in fixing bugs, adding features, or improving documentation, here's how you can help:
 
-1. Fork the repository
-2. Create your feature branch
-3. Make your changes
-4. Submit a Pull Request
+1. Share ideas through issues
+2. Submit code improvements
+3. Enhance documentation
+4. Suggest new features
 
-All PRs will be reviewed and considered for merging into the main branch.
+We're particularly interested in contributions toward planned features and new ideas that could enhance the user experience.
 
 ## 🌿 Branch Structure
-Currently maintaining a single main branch. Future development will implement:
+Currently using a single main branch. Future development will implement:
 - `main` - Stable releases
-- `development` - Active development and features
+- `development` - Active development
 
 ## 🙏 Acknowledgments
 
-- [Tailwind CSS](https://tailwindcss.com/) for the excellent UI framework
-- [IDB Wrapper](https://github.com/jakearchibald/idb) for making IndexedDB interactions smoother
+- [Tailwind CSS](https://tailwindcss.com/) for the UI framework
+- [IDB Wrapper](https://github.com/jakearchibald/idb) for IndexedDB interactions
 
 ## 📄 License
 
